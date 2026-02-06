@@ -20,23 +20,31 @@ RUN bun run build
 # Create a startup script that waits for postgres and then runs migrations
 RUN echo '#!/bin/sh\n\
 set -e\n\
-# Resolve host/port from DB_HOST or PGHOST (Railway uses PG* vars)\n\
-PG_WAIT_HOST=${DB_HOST:-${PGHOST}}\n\
-PG_WAIT_PORT=${DB_PORT:-${PGPORT:-5432}}\n\
-MAX_RETRIES=60\n\
+# Extract host from DATABASE_URL if available, otherwise use DB_HOST/PGHOST\n\
+if [ -n "$DATABASE_URL" ]; then\n\
+  PG_WAIT_HOST=$(echo "$DATABASE_URL" | sed -n "s|.*@\\([^:/]*\\).*|\\1|p")\n\
+  PG_WAIT_PORT=$(echo "$DATABASE_URL" | sed -n "s|.*:\\([0-9]*\\)/.*|\\1|p")\n\
+  PG_WAIT_PORT=${PG_WAIT_PORT:-5432}\n\
+else\n\
+  PG_WAIT_HOST=${DB_HOST:-${PGHOST}}\n\
+  PG_WAIT_PORT=${DB_PORT:-${PGPORT:-5432}}\n\
+fi\n\
+MAX_RETRIES=30\n\
 RETRY_COUNT=0\n\
 if [ -n "$PG_WAIT_HOST" ]; then\n\
   echo "Waiting for postgres at ${PG_WAIT_HOST}:${PG_WAIT_PORT}..."\n\
-  while ! nc -z ${PG_WAIT_HOST} ${PG_WAIT_PORT}; do\n\
+  while ! nc -z -w 2 ${PG_WAIT_HOST} ${PG_WAIT_PORT} 2>/dev/null; do\n\
     RETRY_COUNT=$((RETRY_COUNT + 1))\n\
     if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then\n\
-      echo "ERROR: Postgres did not become available after $MAX_RETRIES attempts"\n\
-      exit 1\n\
+      echo "WARNING: Postgres wait timed out after $MAX_RETRIES attempts, trying migration anyway..."\n\
+      break\n\
     fi\n\
     echo "Postgres is unavailable - sleeping (attempt $RETRY_COUNT/$MAX_RETRIES)"\n\
-    sleep 2\n\
+    sleep 3\n\
   done\n\
-  echo "Postgres is up"\n\
+  if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then\n\
+    echo "Postgres is up"\n\
+  fi\n\
 else\n\
   echo "No PG host configured for wait check, proceeding..."\n\
 fi\n\
