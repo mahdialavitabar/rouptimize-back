@@ -1,0 +1,49 @@
+node_modules/
+dist/
+build/
+coverage/
+.nyc_output/
+.cache/
+.tmp/
+.temp/
+
+# NestJS
+.nest/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime uploads
+uploads/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local database / sqlite
+*.sqlite
+*.sqlite3
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Misc
+*.pem
+*.key
+*.crt

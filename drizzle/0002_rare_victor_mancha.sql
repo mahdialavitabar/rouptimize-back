@@ -1,0 +1,1 @@
+ALTER TYPE "public"."routes_status_enum" ADD VALUE 'delayed';
