@@ -26,17 +26,23 @@ async function bootstrap() {
       .filter(Boolean),
   ];
 
+  // Regex to match Vercel preview deployment URLs for the frontend
+  const vercelPreviewRegex =
+    /^https:\/\/rouptimize-front(-[a-z0-9]+)*\.vercel\.app$/;
+
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin) return callback(null, true);
       // Allow specific origins
       if (allowedOrigins.includes(origin)) return callback(null, true);
+      // Allow Vercel preview deployments
+      if (vercelPreviewRegex.test(origin)) return callback(null, true);
       // Log rejected origin for debugging
       console.warn(
         `CORS rejected origin: ${origin}. Allowed: ${allowedOrigins.join(
           ', ',
-        )}`,
+        )} + Vercel previews`,
       );
       return callback(new Error('Not allowed by CORS'));
     },
