@@ -4,19 +4,18 @@ WORKDIR /app
 
 ENV CI=true
 
+COPY package.json bun.lock ./
+RUN bun install
+
 COPY . .
 
-RUN bun install
-RUN cd apps/api && bun install
-
 FROM base AS development
-CMD ["/bin/sh", "-c", "bun run --filter api drizzle:migrate && bun run --filter api dev"]
+CMD ["/bin/sh", "-c", "bun run drizzle:migrate && bun run dev"]
 
 FROM base AS production
 # Install curl for health checks and netcat for connection testing
 RUN apt-get update && apt-get install -y curl netcat-openbsd && rm -rf /var/lib/apt/lists/*
-RUN bun run --filter api build
-WORKDIR /app/apps/api
+RUN bun run build
 
 # Create a startup script that waits for postgres and then runs migrations
 RUN echo '#!/bin/sh\n\
@@ -34,13 +33,13 @@ while ! nc -z ${DB_HOST} ${DB_PORT:-5432}; do\n\
   sleep 2\n\
 done\n\
 echo "Postgres is up - running migrations"\n\
-cd /app && bun run --filter api drizzle:migrate\n\
+bun run drizzle:migrate\n\
 if [ $? -ne 0 ]; then\n\
   echo "ERROR: Migration failed"\n\
   exit 1\n\
 fi\n\
 echo "Starting API server"\n\
-cd /app/apps/api && exec bun dist/main.js\n\
+exec bun dist/main.js\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
 # Environment variables are provided by docker-compose env_file
