@@ -23,7 +23,7 @@
 /**
  * The PostgreSQL role used for all application queries.
  * This role has RLS enforced (no BYPASSRLS privilege).
- * Created via migration: 0002_create_restricted_app_role.sql
+ * Auto-provisioned by DatabaseModule on every startup (ensureRlsRole).
  */
 export const RLS_DB_ROLE = 'rouptimize_app_rls';
 
