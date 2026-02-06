@@ -42,23 +42,11 @@ function patchPgParsers(): void {
         }
 
         return new Pool({
-          host:
-            configService.get<string>('DB_HOST') ??
-            configService.get<string>('PGHOST'),
-          port:
-            configService.get<number>('DB_PORT') ??
-            configService.get<number>('PGPORT') ??
-            5432,
-          user:
-            configService.get<string>('DB_USERNAME') ??
-            configService.get<string>('PGUSER'),
-          password:
-            configService.get<string>('DB_PASSWORD') ??
-            configService.get<string>('PGPASSWORD') ??
-            '',
-          database:
-            configService.get<string>('DB_DATABASE') ??
-            configService.get<string>('PGDATABASE'),
+          host: configService.get<string>('DB_HOST'),
+          port: configService.get<number>('DB_PORT') ?? 5432,
+          user: configService.get<string>('DB_USERNAME'),
+          password: configService.get<string>('DB_PASSWORD') ?? '',
+          database: configService.get<string>('DB_DATABASE'),
           ...poolOptions,
         });
       },

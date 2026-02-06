@@ -3,8 +3,7 @@ import { defineConfig } from 'drizzle-kit';
 import * as path from 'path';
 
 // Check if DB vars are already set (e.g. by Docker/Railway)
-const isSystemEnv =
-  !!process.env.DB_HOST || !!process.env.PGHOST || !!process.env.DATABASE_URL;
+const isSystemEnv = !!process.env.DB_HOST || !!process.env.DATABASE_URL;
 
 // Only load .env files in local development — skip entirely in Docker/Railway
 if (!isSystemEnv) {
@@ -27,15 +26,15 @@ function buildDatabaseUrl(): string {
     return direct;
   }
 
-  const host = process.env.DB_HOST || process.env.PGHOST;
-  const port = process.env.DB_PORT || process.env.PGPORT || '5432';
-  const username = process.env.DB_USERNAME || process.env.PGUSER;
-  const password = process.env.DB_PASSWORD || process.env.PGPASSWORD || '';
-  const database = process.env.DB_DATABASE || process.env.PGDATABASE;
+  const host = process.env.DB_HOST;
+  const port = process.env.DB_PORT || '5432';
+  const username = process.env.DB_USERNAME;
+  const password = process.env.DB_PASSWORD || '';
+  const database = process.env.DB_DATABASE;
 
   if (!host || !username || !database) {
     throw new Error(
-      'Missing DB config. Provide DATABASE_URL, DB_HOST/DB_USERNAME/DB_DATABASE, or PGHOST/PGUSER/PGDATABASE env vars.',
+      'Missing DB config. Provide DATABASE_URL or DB_HOST/DB_USERNAME/DB_DATABASE env vars.',
     );
   }
 

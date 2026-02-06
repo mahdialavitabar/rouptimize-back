@@ -27,8 +27,8 @@ set -e\n\
 # When DATABASE_URL is set (Railway), skip nc check - pg driver handles retries.\n\
 # Only use nc wait for local/docker-compose where DB_HOST is set.\n\
 if [ -z "$DATABASE_URL" ]; then\n\
-  PG_WAIT_HOST=${DB_HOST:-${PGHOST}}\n\
-  PG_WAIT_PORT=${DB_PORT:-${PGPORT:-5432}}\n\
+  PG_WAIT_HOST=${DB_HOST}\n\
+  PG_WAIT_PORT=${DB_PORT:-5432}\n\
   MAX_RETRIES=30\n\
   RETRY_COUNT=0\n\
   if [ -n "$PG_WAIT_HOST" ]; then\n\

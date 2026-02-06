@@ -30,17 +30,13 @@ export class RedisService implements OnModuleDestroy {
     });
 
     const host =
-      this.configService.get<string>('REDIS_HOST', { infer: true }) ||
-      this.configService.get<string>('REDISHOST', { infer: true }) ||
-      'redis';
+      this.configService.get<string>('REDIS_HOST', { infer: true }) || 'redis';
     const port = Number(
-      this.configService.get<number>('REDIS_PORT', { infer: true }) ||
-        this.configService.get<number>('REDISPORT', { infer: true }) ||
-        6379,
+      this.configService.get<number>('REDIS_PORT', { infer: true }) || 6379,
     );
-    const password =
-      this.configService.get<string>('REDIS_PASSWORD', { infer: true }) ||
-      this.configService.get<string>('REDISPASSWORD', { infer: true });
+    const password = this.configService.get<string>('REDIS_PASSWORD', {
+      infer: true,
+    });
 
     try {
       const client = redisUrl
