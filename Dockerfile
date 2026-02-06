@@ -13,8 +13,11 @@ FROM base AS development
 CMD ["/bin/sh", "-c", "bun run drizzle:migrate && bun run dev"]
 
 FROM base AS production
-# Install curl for health checks and netcat for connection testing
-RUN apt-get update && apt-get install -y curl netcat-openbsd && rm -rf /var/lib/apt/lists/*
+
+ENV NODE_ENV=production
+
+# Install curl for health checks and netcat/dnsutils for connection testing
+RUN apt-get update && apt-get install -y curl netcat-openbsd dnsutils && rm -rf /var/lib/apt/lists/*
 RUN bun run build
 
 # Create a startup script that runs migrations then starts the server
@@ -42,11 +45,24 @@ if [ -z "$DATABASE_URL" ]; then\n\
   fi\n\
 else\n\
   echo "DATABASE_URL detected (Railway), skipping nc wait check"\n\
-  sleep 5\n\
+  # Extract hostname from DATABASE_URL for DNS readiness check\n\
+  DB_HOSTNAME=$(echo "$DATABASE_URL" | sed -n "s|.*@\\([^:/]*\\).*|\\1|p")\n\
+  echo "Database hostname: ${DB_HOSTNAME}"\n\
+  DNS_RETRIES=10\n\
+  DNS_ATTEMPT=0\n\
+  while ! nslookup "$DB_HOSTNAME" > /dev/null 2>&1; do\n\
+    DNS_ATTEMPT=$((DNS_ATTEMPT + 1))\n\
+    if [ $DNS_ATTEMPT -ge $DNS_RETRIES ]; then\n\
+      echo "WARNING: DNS for $DB_HOSTNAME not resolving after ${DNS_RETRIES} attempts, trying migration anyway..."\n\
+      break\n\
+    fi\n\
+    echo "Waiting for DNS resolution of ${DB_HOSTNAME} (attempt $DNS_ATTEMPT/$DNS_RETRIES)"\n\
+    sleep 3\n\
+  done\n\
 fi\n\
 \n\
 echo "Running migrations"\n\
-MIGRATION_RETRIES=3\n\
+MIGRATION_RETRIES=5\n\
 MIGRATION_ATTEMPT=0\n\
 until bun run drizzle:migrate; do\n\
   MIGRATION_ATTEMPT=$((MIGRATION_ATTEMPT + 1))\n\
@@ -54,8 +70,8 @@ until bun run drizzle:migrate; do\n\
     echo "ERROR: Migration failed after $MIGRATION_RETRIES attempts"\n\
     exit 1\n\
   fi\n\
-  echo "Migration failed, retrying in 5s (attempt $MIGRATION_ATTEMPT/$MIGRATION_RETRIES)"\n\
-  sleep 5\n\
+  echo "Migration failed, retrying in 10s (attempt $MIGRATION_ATTEMPT/$MIGRATION_RETRIES)"\n\
+  sleep 10\n\
 done\n\
 \n\
 echo "Starting API server"\n\

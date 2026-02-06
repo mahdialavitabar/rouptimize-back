@@ -2,23 +2,23 @@ import * as dotenv from 'dotenv';
 import { defineConfig } from 'drizzle-kit';
 import * as path from 'path';
 
-const workspaceRoot = path.resolve(__dirname, '../..');
-
 // Check if DB vars are already set (e.g. by Docker/Railway)
 const isSystemEnv =
   !!process.env.DB_HOST || !!process.env.PGHOST || !!process.env.DATABASE_URL;
 
-// Load environment-specific config
-if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
-  dotenv.config({
-    path: path.join(workspaceRoot, '.env.development'),
-    override: !isSystemEnv,
-  });
-} else {
-  dotenv.config({
-    path: path.join(workspaceRoot, '.env'),
-    override: !isSystemEnv,
-  });
+// Only load .env files in local development — skip entirely in Docker/Railway
+if (!isSystemEnv) {
+  const workspaceRoot = path.resolve(__dirname, '../..');
+
+  if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+    dotenv.config({
+      path: path.join(workspaceRoot, '.env.development'),
+    });
+  } else {
+    dotenv.config({
+      path: path.join(workspaceRoot, '.env'),
+    });
+  }
 }
 
 function buildDatabaseUrl(): string {
