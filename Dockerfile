@@ -20,19 +20,27 @@ RUN bun run build
 # Create a startup script that waits for postgres and then runs migrations
 RUN echo '#!/bin/sh\n\
 set -e\n\
+# Resolve host/port from DB_HOST or PGHOST (Railway uses PG* vars)\n\
+PG_WAIT_HOST=${DB_HOST:-${PGHOST}}\n\
+PG_WAIT_PORT=${DB_PORT:-${PGPORT:-5432}}\n\
 MAX_RETRIES=60\n\
 RETRY_COUNT=0\n\
-echo "Waiting for postgres at ${DB_HOST}:${DB_PORT:-5432}..."\n\
-while ! nc -z ${DB_HOST} ${DB_PORT:-5432}; do\n\
-  RETRY_COUNT=$((RETRY_COUNT + 1))\n\
-  if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then\n\
-    echo "ERROR: Postgres did not become available after $MAX_RETRIES attempts"\n\
-    exit 1\n\
-  fi\n\
-  echo "Postgres is unavailable - sleeping (attempt $RETRY_COUNT/$MAX_RETRIES)"\n\
-  sleep 2\n\
-done\n\
-echo "Postgres is up - running migrations"\n\
+if [ -n "$PG_WAIT_HOST" ]; then\n\
+  echo "Waiting for postgres at ${PG_WAIT_HOST}:${PG_WAIT_PORT}..."\n\
+  while ! nc -z ${PG_WAIT_HOST} ${PG_WAIT_PORT}; do\n\
+    RETRY_COUNT=$((RETRY_COUNT + 1))\n\
+    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then\n\
+      echo "ERROR: Postgres did not become available after $MAX_RETRIES attempts"\n\
+      exit 1\n\
+    fi\n\
+    echo "Postgres is unavailable - sleeping (attempt $RETRY_COUNT/$MAX_RETRIES)"\n\
+    sleep 2\n\
+  done\n\
+  echo "Postgres is up"\n\
+else\n\
+  echo "No PG host configured for wait check, proceeding..."\n\
+fi\n\
+echo "Running migrations"\n\
 bun run drizzle:migrate\n\
 if [ $? -ne 0 ]; then\n\
   echo "ERROR: Migration failed"\n\

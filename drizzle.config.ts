@@ -4,8 +4,9 @@ import * as path from 'path';
 
 const workspaceRoot = path.resolve(__dirname, '../..');
 
-// Check if DB_HOST is already set (e.g. by Docker)
-const isSystemEnv = !!process.env.DB_HOST;
+// Check if DB vars are already set (e.g. by Docker/Railway)
+const isSystemEnv =
+  !!process.env.DB_HOST || !!process.env.PGHOST || !!process.env.DATABASE_URL;
 
 // Load environment-specific config
 if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
@@ -26,15 +27,15 @@ function buildDatabaseUrl(): string {
     return direct;
   }
 
-  const host = process.env.DB_HOST;
-  const port = process.env.DB_PORT ?? '5432';
-  const username = process.env.DB_USERNAME;
-  const password = process.env.DB_PASSWORD ?? '';
-  const database = process.env.DB_DATABASE;
+  const host = process.env.DB_HOST || process.env.PGHOST;
+  const port = process.env.DB_PORT || process.env.PGPORT || '5432';
+  const username = process.env.DB_USERNAME || process.env.PGUSER;
+  const password = process.env.DB_PASSWORD || process.env.PGPASSWORD || '';
+  const database = process.env.DB_DATABASE || process.env.PGDATABASE;
 
   if (!host || !username || !database) {
     throw new Error(
-      'Missing DB config. Provide DATABASE_URL or DB_HOST/DB_USERNAME/DB_DATABASE env vars.',
+      'Missing DB config. Provide DATABASE_URL, DB_HOST/DB_USERNAME/DB_DATABASE, or PGHOST/PGUSER/PGDATABASE env vars.',
     );
   }
 

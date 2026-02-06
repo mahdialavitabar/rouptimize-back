@@ -24,28 +24,42 @@ export class RedisService implements OnModuleDestroy {
   }
 
   private async createClient(): Promise<RedisClientType> {
-    const host =
-      this.configService.get<string>('REDIS_HOST', { infer: true }) || 'redis';
-    const port = Number(
-      this.configService.get<number>('REDIS_PORT', { infer: true }) || 6379,
-    );
-    const password = this.configService.get<string>('REDIS_PASSWORD', {
+    // Support REDIS_URL (Railway provides this) or individual vars
+    const redisUrl = this.configService.get<string>('REDIS_URL', {
       infer: true,
     });
 
+    const host =
+      this.configService.get<string>('REDIS_HOST', { infer: true }) ||
+      this.configService.get<string>('REDISHOST', { infer: true }) ||
+      'redis';
+    const port = Number(
+      this.configService.get<number>('REDIS_PORT', { infer: true }) ||
+        this.configService.get<number>('REDISPORT', { infer: true }) ||
+        6379,
+    );
+    const password =
+      this.configService.get<string>('REDIS_PASSWORD', { infer: true }) ||
+      this.configService.get<string>('REDISPASSWORD', { infer: true });
+
     try {
-      const client = createClient({
-        socket: {
-          host,
-          port,
-        },
-        password: password || undefined,
-      });
+      const client = redisUrl
+        ? createClient({ url: redisUrl })
+        : createClient({
+            socket: { host, port },
+            password: password || undefined,
+          });
       client.on('error', (err: unknown) =>
         this.logger.error(this.formatError(err)),
       );
       await client.connect();
-      this.logger.log(`Redis connected at ${host}:${port}`);
+      this.logger.log(
+        `Redis connected at ${
+          redisUrl
+            ? redisUrl.replace(/\/\/.*@/, '//<credentials>@')
+            : `${host}:${port}`
+        }`,
+      );
       return client as unknown as RedisClientType;
     } catch (error) {
       this.connectPromise = undefined;

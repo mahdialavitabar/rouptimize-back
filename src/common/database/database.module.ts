@@ -24,12 +24,8 @@ function patchPgParsers(): void {
       useFactory: (configService: ConfigService) => {
         patchPgParsers();
 
-        return new Pool({
-          host: configService.get<string>('DB_HOST', { infer: true }),
-          port: configService.get<number>('DB_PORT', { infer: true }),
-          user: configService.get<string>('DB_USERNAME', { infer: true }),
-          password: configService.get<string>('DB_PASSWORD', { infer: true }),
-          database: configService.get<string>('DB_DATABASE', { infer: true }),
+        const databaseUrl = configService.get<string>('DATABASE_URL');
+        const poolOptions = {
           max: configService.get<number>('DB_POOL_MAX', { infer: true }) ?? 10,
           idleTimeoutMillis:
             configService.get<number>('DB_POOL_IDLE_TIMEOUT_MS', {
@@ -39,6 +35,31 @@ function patchPgParsers(): void {
             configService.get<number>('DB_POOL_CONNECTION_TIMEOUT_MS', {
               infer: true,
             }) ?? 2000,
+        };
+
+        if (databaseUrl) {
+          return new Pool({ connectionString: databaseUrl, ...poolOptions });
+        }
+
+        return new Pool({
+          host:
+            configService.get<string>('DB_HOST') ??
+            configService.get<string>('PGHOST'),
+          port:
+            configService.get<number>('DB_PORT') ??
+            configService.get<number>('PGPORT') ??
+            5432,
+          user:
+            configService.get<string>('DB_USERNAME') ??
+            configService.get<string>('PGUSER'),
+          password:
+            configService.get<string>('DB_PASSWORD') ??
+            configService.get<string>('PGPASSWORD') ??
+            '',
+          database:
+            configService.get<string>('DB_DATABASE') ??
+            configService.get<string>('PGDATABASE'),
+          ...poolOptions,
         });
       },
     },
