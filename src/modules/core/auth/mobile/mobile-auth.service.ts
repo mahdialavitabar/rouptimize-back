@@ -79,12 +79,14 @@ export class MobileAuthService {
       await this.refreshTokenService.rotateRefreshToken(refreshToken);
 
     if (!mobileUserId) {
-      throw new Error('Invalid refresh token state: missing mobileUserId');
+      throw new UnauthorizedException(
+        'Invalid refresh token state: missing mobileUserId',
+      );
     }
 
     const mobileUser = await this.mobileUsers.findById(mobileUserId);
     if (!mobileUser) {
-      throw new Error('Mobile user not found');
+      throw new UnauthorizedException('Mobile user not found');
     }
 
     // Check if user is blocked
